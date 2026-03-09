@@ -26,9 +26,11 @@ if st.button("Solve Issue"):
                 report = solve_github_issue(repo_url, issue_text)
 
             # Show full LLM reasoning exactly as it comes
+            # Show full LLM reasoning as-is
             st.subheader("AI Reasoning")
-            reasoning_text = "\n\n".join(step["description"] for step in report["steps"])
-            st.text_area("LLM Reasoning", reasoning_text, height=500)
+            st.text_area("LLM Full Reasoning", report.get("full_reasoning", ""), height=400)
+
+           
 
             # Prepare pull request link with only final corrected code
             final_code = report.get("final_fix", "")
