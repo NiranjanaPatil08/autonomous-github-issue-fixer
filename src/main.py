@@ -8,12 +8,24 @@ from src.agents.research_agent import research_issue
 from src.agents.fix_generator_agent import generate_fix
 from src.agents.reviewer_agent import review_fix
 from src.agents.file_finder_agent import find_relevant_files
+import os
 
-# Define allowed code extensions for fallback
-CODE_EXTENSIONS = [".py", ".js", ".ts", ".java", ".cpp", ".c", ".cs", ".go", ".rb"]
+# Allowed code extensions for fallback
+CODE_EXTENSIONS = [".py", ".js", ".ts", ".java", ".cpp", ".c", ".cs", ".go", ".rb", ".html", ".css"]
 
 def filter_code_files(file_list):
     return [f for f in file_list if any(f.endswith(ext) for ext in CODE_EXTENSIONS)]
+
+def list_all_files(repo_path):
+    """
+    List all files in the repo relative to repo_path
+    """
+    all_files = []
+    for root, dirs, files in os.walk(repo_path):
+        for file in files:
+            rel_path = os.path.relpath(os.path.join(root, file), repo_path)
+            all_files.append(rel_path)
+    return all_files
 
 def solve_github_issue(repo_url, issue, fallback_file_count=10):
     print("\nClassifying issue...")
@@ -21,25 +33,25 @@ def solve_github_issue(repo_url, issue, fallback_file_count=10):
     print("Issue type:", classification)
 
     if classification != "BUG":
-        return "This issue does not require a code fix."
+        return f"This issue does not require a code fix. Issue classified as: {classification}"
 
     print("\nCloning repository...")
     repo_path = clone_repo(repo_url)
 
     print("\nListing repository files...")
-    repo_files = list_repo_files(repo_path)
+    repo_files = list_all_files(repo_path)
+    print(f"Total files in repo: {len(repo_files)}")
 
     print("\nFinding relevant files...")
     relevant_files = find_relevant_files(issue, repo_files)
-    print("Relevant files:", relevant_files)
+    print("Relevant files found by AI:", relevant_files)
 
     print("\nLoading selected files...")
     files = load_selected_files(relevant_files, repo_path)
 
     # Fallback 1: if AI selection empty, pick first N code files from repo
     if not files:
-        # filter repo files to only code
-        code_files = [f for f in repo_files if f.endswith((".py", ".js", ".ts", ".java", ".cpp", ".c", ".cs", ".go", ".rb"))]
+        code_files = filter_code_files(repo_files)
         fallback_files = code_files[:fallback_file_count]
 
         if not fallback_files:
@@ -79,5 +91,5 @@ if __name__ == "__main__":
     repo_url = input("Enter GitHub repository URL: ")
     issue = input("Describe the GitHub issue: ")
     result = solve_github_issue(repo_url, issue)
-    print("\nAI Suggested Fix:\n")
+    print("\nAI Suggested Fix + Reasoning:\n")
     print(result)
