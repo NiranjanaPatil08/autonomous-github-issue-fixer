@@ -25,13 +25,37 @@ if st.button("Solve Issue"):
             st.write(issue_text)
 
             with st.spinner("Analyzing repository and generating fix..."):
-                result = solve_github_issue(repo_url, issue_text)
+                report = solve_github_issue(repo_url, issue_text)
 
-            st.subheader("AI Suggested Fix")
-            st.code(result["fix"], language="python")
+            if "message" in report:
+                st.info(report["message"])
+            else:
+                st.subheader("Issue Classification")
+                st.write(report.get("classification"))
 
-            st.subheader("Generated Pull Request")
-            st.markdown(f"[View Pull Request]({result['pull_request']})")
+                st.subheader("Repository Path")
+                st.write(report.get("repo_path"))
+
+                st.subheader("Relevant Files")
+                st.write(report.get("relevant_files"))
+
+                st.subheader("Loaded Files")
+                st.write(report.get("loaded_files"))
+
+                st.subheader("Number of Code Chunks")
+                st.write(report.get("num_chunks"))
+
+                st.subheader("Research Keywords")
+                st.write(report.get("research_keywords"))
+
+                st.subheader("Generated Fix")
+                st.code(report.get("generated_fix"), language="python")
+
+                st.subheader("Reviewed Fix")
+                st.code(report.get("reviewed_fix"), language="python")
+
+                st.subheader("Pull Request URL")
+                st.markdown(f"[View PR]({report.get('pull_request_url')})")
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")

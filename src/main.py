@@ -13,69 +13,69 @@ from src.agents.pr_agent import create_pull_request
 
 
 def solve_github_issue(repo_url, issue):
-    print("\nClassifying issue...")
+    report = {}
 
+    # Step 1: Classify issue
     classification = classify_issue(issue)
-
-    print("Issue type:", classification)
-
+    report["classification"] = classification
     if classification != "BUG":
-        return "This issue does not require a code fix."
+        report["message"] = "This issue does not require a code fix."
+        return report
 
-
-    print("\nCloning repository...")
+    # Step 2: Clone repo
     repo_path = clone_repo(repo_url)
+    report["repo_path"] = repo_path
 
-    print("\nListing repository files...")
+    # Step 3: List repo files
     repo_files = list_repo_files(repo_path)
+    report["repo_files"] = repo_files
 
-    print("\nFinding relevant files...")
+    # Step 4: Find relevant files
     relevant_files = find_relevant_files(issue, repo_files)
+    report["relevant_files"] = relevant_files
 
-    print("Relevant files:", relevant_files)
-
-    print("\nLoading selected files...")
+    # Step 5: Load selected files
     files = load_selected_files(relevant_files, repo_path)
-
-    # fallback if AI picked wrong paths
     if not files:
-        print("No files loaded from AI selection. Falling back to repo files.")
         files = load_selected_files(repo_files[:10], repo_path)
+    report["loaded_files"] = list(files.keys())
 
-
-    print("\nChunking files...")
+    # Step 6: Chunk documents
     chunks = chunk_documents(files)
-
+    report["num_chunks"] = len(chunks)
     if not chunks:
-        return "Error: No code chunks could be created."
+        report["error"] = "No code chunks could be created."
+        return report
 
-
-    print("\nBuilding vector database...")
+    # Step 7: Build vector store
     vectorstore = build_vector_store(chunks)
+    report["vectorstore"] = "Built successfully"
 
-    print("\nAnalyzing issue...")
+    # Step 8: Research issue
     keywords = research_issue(issue)
+    report["research_keywords"] = keywords
 
-    print("\nRetrieving relevant code...")
+    # Step 9: Retrieve relevant code
     docs = get_relevant_chunks(vectorstore, keywords)
+    report["retrieved_docs_count"] = len(docs)
 
-    print("\nGenerating fix...")
+    # Step 10: Generate fix
     fix = generate_fix(issue, docs)
+    report["generated_fix"] = fix
 
-    print("\nReviewing fix...")
+    # Step 11: Review fix
     final_fix = review_fix(issue, fix)
+    report["reviewed_fix"] = final_fix
 
-    print("\nCreating Pull Request...")
+    # Step 12: Create Pull Request
     pr_url = create_pull_request(
         repo_url,
         final_fix,
-        relevant_files[0]   # PR will modify the first relevant file
+        relevant_files[0] if relevant_files else None
     )
+    report["pull_request_url"] = pr_url
 
-    return {
-        "fix": final_fix,
-        "pull_request": pr_url
-    }
+    return report
 
 
 
