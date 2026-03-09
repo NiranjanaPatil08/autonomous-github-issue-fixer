@@ -24,21 +24,32 @@ if st.button("Solve Issue"):
             with st.spinner("Analyzing repository and generating fix..."):
                 report = solve_github_issue(repo_url, issue_text)
 
-            # Step-by-step reasoning
+            # Step-by-step reasoning display
             st.subheader("Step-by-Step Reasoning")
-            for step in report["steps"]:
+            for step in report.get("steps", []):
                 with st.expander(step["title"]):
                     st.write(step["description"])
+                    if step.get("details"):
+                        st.json(step["details"])
 
-            # Final code-only fix
+            # Final code fix display
             if report.get("final_fix"):
                 st.subheader("Final Reviewed Fix")
                 st.code(report["final_fix"], language="python")
 
-            # Pull request link
-            if report.get("pull_request_url"):
+            # Create PR and show link
+            if report.get("final_fix") and report.get("pull_request_file"):
+                from src.agents.pr_agent import create_pull_request
+
+                pr_url = create_pull_request(
+                    repo_url,
+                    fix_code=report["final_fix"],
+                    file_path=report["pull_request_file"],
+                    reasoning_steps=report.get("steps")
+                )
+
                 st.subheader("Pull Request")
-                st.markdown(f"[View PR]({report['pull_request_url']})")
+                st.markdown(f"[View PR]({pr_url})")
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
