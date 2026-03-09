@@ -1,21 +1,18 @@
 from src.llm import llm
+import re
 
 def generate_fix(issue, retrieved_docs):
     """
-    Generate a fix for the GitHub issue.
-
-    Returns:
-    {
-        "reasoning": full LLM reasoning (English + explanations + tests),
-        "code": final Python code snippet
-    }
+    Generate a code fix using the issue description and relevant code.
+    Returns dict with reasoning (full LLM text) and code (for PR only).
     """
     code_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-
     prompt = f"""
 You are a senior software engineer.
 
-GitHub Issue:
+A GitHub issue has been reported.
+
+Issue:
 {issue}
 
 Relevant Code:
@@ -25,21 +22,16 @@ Task:
 1. Understand the issue.
 2. Identify the bug or problem.
 3. Suggest a fix.
-4. Provide full reasoning in English, explanations, tests if needed, 
-   followed by the corrected Python code.
+4. Show the corrected code snippet.
 
-Return the full reasoning and code.
+Provide full reasoning and the fixed code.
 """
     response = llm.invoke(prompt)
     full_text = response.content
 
-    # Split reasoning vs code (keep reasoning intact as much as possible)
-    code_start = full_text.find("```")
-    if code_start != -1:
-        reasoning = full_text[:code_start].strip()
-        code = full_text[code_start:].strip("```").strip()
-    else:
-        reasoning = full_text
-        code = ""
+    code_blocks = re.findall(r"```(?:python)?\n(.*?)```", full_text, re.DOTALL)
+    code = "\n\n".join(code_blocks).strip()
+
+    reasoning = full_text.strip()
 
     return {"reasoning": reasoning, "code": code}

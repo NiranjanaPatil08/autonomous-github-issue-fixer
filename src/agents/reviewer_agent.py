@@ -1,14 +1,10 @@
 from src.llm import llm
+import re
 
-def review_fix(issue, proposed_code):
+def review_fix(issue, proposed_fix):
     """
-    Review and improve a generated fix.
-
-    Returns:
-    {
-        "reasoning": LLM review explanation (optional),
-        "code": final corrected Python code
-    }
+    Review the generated fix and improve it if needed.
+    Returns dict with reasoning (full LLM text) and final code.
     """
     prompt = f"""
 You are a senior software engineer reviewing a proposed code fix.
@@ -17,25 +13,24 @@ GitHub Issue:
 {issue}
 
 Proposed Fix:
-{proposed_code}
+{proposed_fix}
 
 Tasks:
-1. Verify correctness.
-2. Identify mistakes or edge cases.
-3. Improve solution if needed.
-4. Provide only the final corrected Python code.
+1. Check if the fix actually solves the issue.
+2. Identify mistakes or missing edge cases.
+3. Improve the solution if needed.
+4. Provide the final corrected fix.
 
-Return your explanation and final code.
+Return full reasoning and final corrected Python code.
 """
     response = llm.invoke(prompt)
     full_text = response.content
 
-    code_start = full_text.find("```")
-    if code_start != -1:
-        reasoning = full_text[:code_start].strip()
-        code = full_text[code_start:].strip("```").strip()
-    else:
-        reasoning = full_text
-        code = proposed_code  # fallback
+    # Extract code blocks for PR only
+    code_blocks = re.findall(r"```(?:python)?\n(.*?)```", full_text, re.DOTALL)
+    code = "\n\n".join(code_blocks).strip()
+
+    # Keep full text as reasoning for website
+    reasoning = full_text.strip()
 
     return {"reasoning": reasoning, "code": code}
