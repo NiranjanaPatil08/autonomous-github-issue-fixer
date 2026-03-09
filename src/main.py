@@ -105,22 +105,24 @@ def solve_github_issue(repo_url, issue):
     })
 
     # 10. Generate fix
-    fix = generate_fix(issue, docs)
+    fix_response = generate_fix(issue, docs)
     report["steps"].append({
         "title": "Generate Fix",
-        "description": "AI-generated fix created."
+        "description": fix_response.get("reasoning", "AI-generated reasoning not available.")
     })
+    fix_code = fix_response.get("code", "")
 
     # 11. Review fix
-    final_fix = review_fix(issue, fix)
+    review_response = review_fix(issue, fix_code)
     report["steps"].append({
         "title": "Review Fix",
-        "description": "Fix reviewed and finalized by AI."
+        "description": review_response.get("reasoning", "AI review reasoning not available.")
     })
+    final_fix_code = review_response.get("code", "")
 
     # 12. Prepare pull request
     pull_request_file = relevant_files[0] if relevant_files else repo_files[0]
-    report["final_fix"] = final_fix
+    report["final_fix"] = final_fix_code
     report["pull_request_file"] = pull_request_file
 
     return report

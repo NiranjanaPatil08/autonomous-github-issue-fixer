@@ -1,10 +1,16 @@
 from src.llm import llm
-
+import re
 
 def generate_fix(issue, retrieved_docs):
     """
     Generate a code fix using the issue description
     and relevant code retrieved from the repository.
+
+    Returns a dict:
+    {
+        "reasoning": <LLM explanation in English>,
+        "code": <final Python code snippet>
+    }
     """
 
     code_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
@@ -30,5 +36,16 @@ Provide a clear explanation and the fixed code.
 """
 
     response = llm.invoke(prompt)
+    full_text = response.content
 
-    return response.content
+    # Extract all python code blocks
+    code_blocks = re.findall(r"```(?:python)?\n(.*?)```", full_text, re.DOTALL)
+    code = "\n\n".join(code_blocks).strip()
+
+    # Remove code blocks from reasoning
+    reasoning = re.sub(r"```(?:python)?\n.*?```", "", full_text, flags=re.DOTALL).strip()
+
+    return {
+        "reasoning": reasoning,
+        "code": code
+    }
