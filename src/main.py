@@ -35,7 +35,7 @@ def solve_github_issue(repo_url, issue):
     print("Relevant files:", relevant_files)
 
     print("\nLoading selected files...")
-    files = load_selected_files(relevant_files)
+    files = load_selected_files(relevant_files, repo_path)
 
 
     print("\nChunking files...")
