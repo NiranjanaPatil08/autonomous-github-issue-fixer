@@ -1,12 +1,13 @@
 import streamlit as st
 from src.main import solve_github_issue
 from src.tools.github_issue_fetcher import fetch_github_issue
+import re
 
 st.set_page_config(page_title="Autonomous GitHub Issue Fixer", page_icon="🤖")
 st.title("🤖 Autonomous GitHub Issue Fixer")
 st.write(
-    "An AI multi-agent system that analyzes GitHub issues, finds relevant code and "
-    "generates fixes."
+    "An AI multi-agent system that analyzes GitHub issues, finds relevant code, "
+    "generates fixes, and automatically creates pull requests."
 )
 
 repo_url = st.text_input("GitHub Repository URL")
@@ -26,28 +27,19 @@ if st.button("Solve Issue"):
 
             st.subheader("AI Reasoning + Fix")
 
-            # Split output into lines to preserve formatting
-            lines = llm_output.splitlines()
-
+            # Detect existing code blocks and preserve them
+            # Split on ``` blocks but keep the markers
+            parts = re.split(r'(```(?:python)?\n.*?\n```)', llm_output, flags=re.DOTALL)
+            
             formatted_output = ""
-            in_code_block = False
-
-            for line in lines:
-                # Detect code lines (simple heuristic)
-                if line.strip().startswith("def ") or line.strip().startswith("class ") or line.strip().startswith("import ") or line.strip().endswith(":"):
-                    if not in_code_block:
-                        formatted_output += "```python\n"
-                        in_code_block = True
-                    formatted_output += line + "\n"
+            for part in parts:
+                # If part is a code block, render as-is
+                if part.startswith("```"):
+                    formatted_output += part + "\n"
                 else:
-                    if in_code_block:
-                        formatted_output += "```\n"
-                        in_code_block = False
-                    formatted_output += line + "\n"
-
-            # Close any unclosed code block
-            if in_code_block:
-                formatted_output += "```\n"
+                    # Escape triple backticks inside regular text
+                    safe_text = part.replace("```", "´´´")
+                    formatted_output += safe_text + "\n"
 
             st.markdown(formatted_output, unsafe_allow_html=True)
 
