@@ -4,7 +4,12 @@ import re
 def review_fix(issue, proposed_fix):
     """
     Review the generated fix and improve it if needed.
-    Returns dict with reasoning (full LLM text) and final code.
+
+    Returns a dict:
+    {
+        "reasoning": <full LLM text including explanation>,
+        "code": <final corrected Python code>
+    }
     """
     prompt = f"""
 You are a senior software engineer reviewing a proposed code fix.
@@ -21,16 +26,20 @@ Tasks:
 3. Improve the solution if needed.
 4. Provide the final corrected fix.
 
-Return full reasoning and final corrected Python code.
+Return a clear explanation and the final corrected code.
 """
+
     response = llm.invoke(prompt)
     full_text = response.content
 
-    # Extract code blocks for PR only
+    # Extract Python code blocks
     code_blocks = re.findall(r"```(?:python)?\n(.*?)```", full_text, re.DOTALL)
     code = "\n\n".join(code_blocks).strip()
 
-    # Keep full text as reasoning for website
+    # Full reasoning = everything including text outside code blocks
     reasoning = full_text.strip()
 
-    return {"reasoning": reasoning, "code": code}
+    return {
+        "reasoning": reasoning,
+        "code": code
+    }
