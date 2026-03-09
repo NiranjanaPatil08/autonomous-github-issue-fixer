@@ -6,7 +6,7 @@ st.set_page_config(page_title="Autonomous GitHub Issue Fixer", page_icon="🤖")
 st.title("🤖 Autonomous GitHub Issue Fixer")
 st.write(
     "An AI multi-agent system that analyzes GitHub issues, finds relevant code, "
-    "generates fixes, and automatically creates pull requests."
+    "generates fixes, and can optionally create pull requests with the fix."
 )
 
 repo_url = st.text_input("GitHub Repository URL")
@@ -24,26 +24,17 @@ if st.button("Solve Issue"):
             with st.spinner("Analyzing repository and generating fix..."):
                 report = solve_github_issue(repo_url, issue_text)
 
-            # Step-by-step reasoning
-            st.subheader("Step-by-Step Reasoning")
-            for step in report["steps"]:
-                with st.expander(step["title"]):
-                    st.write(step["description"])
-                    if step.get("details"):
-                        st.json(step["details"])
+            # Show full LLM reasoning
+            if report.get("llm_reasoning"):
+                st.subheader("LLM Reasoning")
+                st.write(report["llm_reasoning"])
 
-            # Final fix code
+            # Show only final code
             if report.get("final_fix"):
-                st.subheader("Final Reviewed Fix")
+                st.subheader("Final Corrected Fix")
                 st.code(report["final_fix"], language="python")
-
-            # Pull request info
-            if report.get("pull_request_file"):
-                st.subheader("Pull Request File Target")
-                st.write(report["pull_request_file"])
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
-
     else:
         st.warning("Please enter repository URL and issue number.")

@@ -1,17 +1,15 @@
 from src.llm import llm
-import re
 
-def review_fix(issue, proposed_fix):
+def review_fix(issue, proposed_code):
     """
     Review the generated fix and improve it if needed.
 
-    Returns a dict:
+    Returns:
     {
-        "reasoning": <reviewer explanation in English>,
-        "code": <final reviewed Python code>
+        "reasoning": <LLM review explanation>,
+        "code": <final Python code>
     }
     """
-
     prompt = f"""
 You are a senior software engineer reviewing a proposed code fix.
 
@@ -19,28 +17,26 @@ GitHub Issue:
 {issue}
 
 Proposed Fix:
-{proposed_fix}
+{proposed_code}
 
 Tasks:
-1. Check if the fix actually solves the issue.
-2. Identify mistakes or missing edge cases.
+1. Verify correctness.
+2. Identify mistakes or edge cases.
 3. Improve the solution if needed.
-4. Provide the final corrected fix.
+4. Provide only the final corrected Python code.
 
-Return a clear explanation and the final corrected code.
+Return your explanation and final code.
 """
-
     response = llm.invoke(prompt)
     full_text = response.content
 
-    # Extract Python code blocks
-    code_blocks = re.findall(r"```(?:python)?\n(.*?)```", full_text, re.DOTALL)
-    code = "\n\n".join(code_blocks).strip()
+    # Split reasoning vs code (keep reasoning intact)
+    code_start = full_text.find("```")
+    if code_start != -1:
+        reasoning = full_text[:code_start].strip()
+        code = full_text[code_start:].strip("```").strip()
+    else:
+        reasoning = full_text
+        code = proposed_code  # fallback
 
-    # Remove code blocks to get reasoning
-    reasoning = re.sub(r"```(?:python)?\n.*?```", "", full_text, flags=re.DOTALL).strip()
-
-    return {
-        "reasoning": reasoning,
-        "code": code
-    }
+    return {"reasoning": reasoning, "code": code}
