@@ -38,27 +38,24 @@ def solve_github_issue(repo_url, issue, fallback_file_count=10):
 
     # Fallback 1: if AI selection empty, pick first N code files from repo
     if not files:
-        code_files = filter_code_files(repo_files)
+        # filter repo files to only code
+        code_files = [f for f in repo_files if f.endswith((".py", ".js", ".ts", ".java", ".cpp", ".c", ".cs", ".go", ".rb"))]
         fallback_files = code_files[:fallback_file_count]
+
+        if not fallback_files:
+            return "Error: No code files found to analyze."
+
         print(f"Fallback: loading first {len(fallback_files)} code files from repo...")
         files = load_selected_files(fallback_files, repo_path)
 
-    if not files:
-        return "Error: No code files found to analyze."
+        if not files:
+            return "Error: Unable to load code files."
 
     print("\nChunking files...")
     chunks = chunk_documents(files)
 
-    # Fallback 2: if chunking fails, try fallback files if not already used
     if not chunks:
-        print("Chunking failed, trying fallback files...")
-        code_files = filter_code_files(repo_files)
-        fallback_files = code_files[:fallback_file_count]
-        files = load_selected_files(fallback_files, repo_path)
-        chunks = chunk_documents(files)
-
-        if not chunks:
-            return "Error: Unable to create chunks from code files."
+        return "Error: Unable to create chunks from code files."
 
     print("\nBuilding vector database...")
     vectorstore = build_vector_store(chunks)
