@@ -22,12 +22,15 @@ if st.button("Solve Issue"):
             st.write(issue_text)
 
             with st.spinner("Analyzing repository and generating fix..."):
-                full_llm_output = solve_github_issue(repo_url, issue_text)
+                llm_output = solve_github_issue(repo_url, issue_text)
 
-            # Display GPT-style reasoning with code blocks
-            st.subheader("AI Reasoning + Code")
-            # Use markdown for better formatting
-            st.markdown(f"```\n{full_llm_output}\n```")
+            st.subheader("AI Reasoning + Fix")
+            
+            # Replace any backticks inside LLM output to avoid breaking markdown
+            safe_output = llm_output.replace("```", "´´´")
+
+            # Render the output as markdown, preserving headings, lists, and code blocks
+            st.markdown(safe_output, unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")

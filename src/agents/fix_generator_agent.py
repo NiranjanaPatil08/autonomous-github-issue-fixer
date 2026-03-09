@@ -21,10 +21,10 @@ Relevant Code:
 {code_context}
 
 Task:
-1. Understand the issue.
-2. Identify the bug or problem.
-3. Suggest a fix.
-4. Show the corrected code snippet.
+1. Understand the issue and explain it.
+2. Identify the bug or problem and explain it.
+3. Suggest a fix and explain it in detail.
+4. Show the corrected code snippet and explain changes in detail.
 5. Explain the changes made and why they are required
 6. List changes made and which files were targeted
 

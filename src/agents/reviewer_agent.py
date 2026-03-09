@@ -19,9 +19,9 @@ Tasks:
 1. Check if the fix actually solves the issue.
 2. Identify mistakes or missing edge cases.
 3. Improve the solution if needed.
-4. Provide the final corrected fix.
-5. Explain the changes made and why they are required
-6. List changes made and which files were targeted
+4. Provide the final corrected fix while keeping explanations intact.
+5. Explain the changes made and why they are required.
+6. List changes made and which files were targeted.
 
 Return the final improved solution.
 """
