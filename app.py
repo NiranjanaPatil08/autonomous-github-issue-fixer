@@ -1,7 +1,6 @@
 import streamlit as st
 from src.main import solve_github_issue
 from src.tools.github_issue_fetcher import fetch_github_issue
-from urllib.parse import quote_plus
 
 st.set_page_config(page_title="Autonomous GitHub Issue Fixer", page_icon="🤖")
 st.title("🤖 Autonomous GitHub Issue Fixer")
@@ -23,18 +22,11 @@ if st.button("Solve Issue"):
             st.write(issue_text)
 
             with st.spinner("Analyzing repository and generating fix..."):
-                report = solve_github_issue(repo_url, issue_text)
+                full_llm_output = solve_github_issue(repo_url, issue_text)
 
-            # Show full LLM reasoning exactly as it comes
-            # Show full LLM reasoning as-is
-            st.subheader("AI Reasoning")
-            st.text_area("LLM Full Reasoning", report.get("final_fix", ""), height=400)
-
-           
-
-            # Prepare pull request link with only final corrected code
-            # final_code = report.get("final_fix", "")
-           
+            # Display the LLM output exactly as it comes
+            st.subheader("AI Reasoning + Code")
+            st.text_area("LLM Full Output", full_llm_output, height=600)
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
