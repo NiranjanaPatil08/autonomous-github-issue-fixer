@@ -10,141 +10,110 @@ from src.agents.reviewer_agent import review_fix
 from src.agents.file_finder_agent import find_relevant_files
 from src.agents.pr_agent import create_pull_request
 
+
 def solve_github_issue(repo_url, issue_text):
-    """
-    Returns a detailed, step-by-step structured report for Streamlit display.
-    """
-    report = {
-        "steps": [],  # each element: {"title": str, "description": str, "details": dict}
-        "final_fix": None,
-        "pull_request_url": None
-    }
+    report_steps = []
 
-    # --- Step 1: Classify Issue ---
+    # Step 1: Classify issue
     classification = classify_issue(issue_text)
-    report["steps"].append({
-        "title": "Issue Classification",
-        "description": f"The issue was classified as: **{classification}**.",
-        "details": {}
+    report_steps.append({
+        "title": "Step 1: Classify Issue",
+        "description": f"Issue type detected: **{classification}**"
     })
+
     if classification != "BUG":
-        report["steps"].append({
-            "title": "No Code Fix Required",
-            "description": "This issue does not require a code fix.",
-            "details": {}
-        })
-        return report
-
-    # --- Step 2: Clone Repository ---
-    repo_path = clone_repo(repo_url)
-    report["steps"].append({
-        "title": "Repository Cloning",
-        "description": f"Repository cloned to: `{repo_path}`",
-        "details": {}
-    })
-
-    # --- Step 3: List and Select Files ---
-    all_files = list_repo_files(repo_path)
-    relevant_files = find_relevant_files(issue_text, all_files)
-    fallback_used = False
-    if not relevant_files:
-        relevant_files = all_files[:10]
-        fallback_used = True
-    loaded_files = load_selected_files(relevant_files, repo_path)
-    report["steps"].append({
-        "title": "File Selection",
-        "description": f"Selected {len(loaded_files)} relevant files.",
-        "details": {
-            "relevant_files": relevant_files,
-            "fallback_used": fallback_used
+        return {
+            "steps": report_steps,
+            "final_fix": None,
+            "pull_request_url": None
         }
+
+    # Step 2: Clone repository
+    repo_path = clone_repo(repo_url)
+    report_steps.append({
+        "title": "Step 2: Clone Repository",
+        "description": f"Repository cloned at `{repo_path}`"
     })
 
-    # --- Step 4: Chunk Documents ---
-    chunks = chunk_documents(loaded_files)
-    report["steps"].append({
-        "title": "Document Chunking",
-        "description": f"Created {len(chunks)} chunks for vector search.",
-        "details": {}
-    })
-    if not chunks:
-        report["steps"].append({
-            "title": "Error",
-            "description": "No code chunks could be created.",
-            "details": {}
-        })
-        return report
-
-    # --- Step 5: Build Vector Store ---
-    vectorstore = build_vector_store(chunks)
-    report["steps"].append({
-        "title": "Vector Database",
-        "description": "Vector store built successfully for semantic search.",
-        "details": {}
+    # Step 3: List files
+    repo_files = list_repo_files(repo_path)
+    report_steps.append({
+        "title": "Step 3: List Repository Files",
+        "description": f"Total files found: {len(repo_files)}"
     })
 
-    # --- Step 6: Research Issue ---
-    keywords = research_issue(issue_text)
-    report["steps"].append({
-        "title": "Issue Research / LLM Analysis",
-        "description": "Keywords and insights extracted from the issue:",
-        "details": {"keywords": keywords}
+    # Step 4: Find relevant files
+    relevant_files = find_relevant_files(issue_text, repo_files)
+    report_steps.append({
+        "title": "Step 4: Find Relevant Files",
+        "description": f"Relevant files: {relevant_files}"
     })
 
-    # --- Step 7: Retrieve Relevant Chunks ---
-    docs = get_relevant_chunks(vectorstore, keywords)
-    report["steps"].append({
-        "title": "Retrieve Relevant Code Chunks",
-        "description": f"{len(docs)} relevant code chunks retrieved for fix generation.",
-        "details": {}
-    })
-
-    # --- Step 8: Generate Fix ---
-    fix = generate_fix(issue_text, docs)
-    llm_reasoning = getattr(fix, "reasoning", "No reasoning available")
-    fix_code = "\n".join(fix) if isinstance(fix, list) else fix
-    report["steps"].append({
-        "title": "LLM Suggested Fix",
-        "description": llm_reasoning,
-        "details": {"generated_fix": fix_code}
-    })
-
-    # --- Step 9: Review Fix ---
-    final_fix = review_fix(issue_text, fix)
-    final_fix_code = "\n".join(final_fix) if isinstance(final_fix, list) else final_fix
-    report["final_fix"] = final_fix_code
-    report["steps"].append({
-        "title": "Reviewed Fix",
-        "description": "Final fix after review.",
-        "details": {"reviewed_fix": final_fix_code}
-    })
-
-    # --- Step 10: Create Pull Request ---
-    if relevant_files:
-        pr_url = create_pull_request(repo_url, final_fix, relevant_files[0])
-        report["pull_request_url"] = pr_url
-        report["steps"].append({
-            "title": "Pull Request Created",
-            "description": f"PR created successfully: [View PR]({pr_url})",
-            "details": {}
+    # Step 5: Load files
+    files = load_selected_files(relevant_files, repo_path)
+    if not files:  # fallback
+        files = load_selected_files(repo_files[:10], repo_path)
+        report_steps.append({
+            "title": "Step 5: Load Selected Files",
+            "description": "Fallback used: first 10 repo files loaded",
         })
     else:
-        report["steps"].append({
-            "title": "PR Not Created",
-            "description": "No relevant files found; PR was not created.",
-            "details": {}
+        report_steps.append({
+            "title": "Step 5: Load Selected Files",
+            "description": f"Loaded files: {[f['name'] for f in files]}"
         })
 
-    return report
+    # Step 6: Chunk files
+    chunks = chunk_documents(files)
+    report_steps.append({
+        "title": "Step 6: Chunk Files",
+        "description": f"Total chunks created: {len(chunks)}"
+    })
 
+    # Step 7: Build vector store
+    vectorstore = build_vector_store(chunks)
+    report_steps.append({
+        "title": "Step 7: Build Vector Store",
+        "description": "Vector database built for semantic search"
+    })
 
-if __name__ == "__main__":
+    # Step 8: Research issue
+    keywords = research_issue(issue_text)
+    report_steps.append({
+        "title": "Step 8: Research Issue",
+        "description": f"Keywords extracted for relevant code retrieval: {keywords}"
+    })
 
-    repo_url = input("Enter GitHub repository URL: ")
+    # Step 9: Retrieve relevant code
+    docs = get_relevant_chunks(vectorstore, keywords)
+    report_steps.append({
+        "title": "Step 9: Retrieve Relevant Code",
+        "description": f"Number of relevant code chunks found: {len(docs)}"
+    })
 
-    issue = input("Describe the GitHub issue: ")
+    # Step 10: Generate fix
+    fix = generate_fix(issue_text, docs)
+    report_steps.append({
+        "title": "Step 10: Generate Fix",
+        "description": "Initial AI-generated fix created"
+    })
 
-    solve_github_issue(repo_url, issue)
+    # Step 11: Review fix
+    final_fix = review_fix(issue_text, fix)
+    report_steps.append({
+        "title": "Step 11: Review Fix",
+        "description": "Final fix reviewed and improved by AI"
+    })
 
+    # Step 12: Create PR (code only)
+    pr_url = create_pull_request(repo_url, final_fix, relevant_files[0])
+    report_steps.append({
+        "title": "Step 12: Create Pull Request",
+        "description": f"Pull request created at [PR link]({pr_url})"
+    })
 
-
+    return {
+        "steps": report_steps,         # For browser reasoning display
+        "final_fix": final_fix,        # Only code for PR
+        "pull_request_url": pr_url     # GitHub PR link
+    }

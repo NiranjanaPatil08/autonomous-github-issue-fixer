@@ -24,15 +24,13 @@ if st.button("Solve Issue"):
             with st.spinner("Analyzing repository and generating fix..."):
                 report = solve_github_issue(repo_url, issue_text)
 
-            # Step-by-step display
-            st.subheader("Step-by-Step LLM Report")
+            # Step-by-step reasoning
+            st.subheader("Step-by-Step Reasoning")
             for step in report["steps"]:
                 with st.expander(step["title"]):
                     st.write(step["description"])
-                    if step.get("details"):
-                        st.json(step["details"])
 
-            # Final fix
+            # Final code-only fix
             if report.get("final_fix"):
                 st.subheader("Final Reviewed Fix")
                 st.code(report["final_fix"], language="python")
@@ -44,6 +42,5 @@ if st.button("Solve Issue"):
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
-
     else:
         st.warning("Please enter repository URL and issue number.")
