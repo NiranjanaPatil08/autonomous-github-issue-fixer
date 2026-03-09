@@ -25,6 +25,8 @@ Task:
 2. Identify the bug or problem.
 3. Suggest a fix.
 4. Show the corrected code snippet.
+5. Explain the changes made and why they are required
+6. List changes made and which files were targeted
 
 Provide a clear explanation and the fixed code.
 """

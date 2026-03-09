@@ -24,9 +24,10 @@ if st.button("Solve Issue"):
             with st.spinner("Analyzing repository and generating fix..."):
                 full_llm_output = solve_github_issue(repo_url, issue_text)
 
-            # Display the LLM output exactly as it comes
+            # Display GPT-style reasoning with code blocks
             st.subheader("AI Reasoning + Code")
-            st.text_area("LLM Full Output", full_llm_output, height=600)
+            # Use markdown for better formatting
+            st.markdown(f"```\n{full_llm_output}\n```")
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
