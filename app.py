@@ -5,8 +5,8 @@ from src.tools.github_issue_fetcher import fetch_github_issue
 st.set_page_config(page_title="Autonomous GitHub Issue Fixer", page_icon="🤖")
 st.title("🤖 Autonomous GitHub Issue Fixer")
 st.write(
-    "An AI multi-agent system that analyzes GitHub issues, finds relevant code, "
-    "generates fixes, and can optionally create pull requests with the fix."
+    "An AI multi-agent system that analyzes GitHub issues, generates fixes, "
+    "and optionally creates pull requests."
 )
 
 repo_url = st.text_input("GitHub Repository URL")
@@ -21,18 +21,18 @@ if st.button("Solve Issue"):
             st.subheader("Fetched Issue")
             st.write(issue_text)
 
-            with st.spinner("Analyzing repository and generating fix..."):
+            with st.spinner("Generating fix and reasoning..."):
                 report = solve_github_issue(repo_url, issue_text)
 
-            # Show full LLM reasoning
+            # Show full LLM reasoning exactly as returned
             if report.get("llm_reasoning"):
-                st.subheader("LLM Reasoning")
+                st.subheader("LLM Reasoning and Explanation")
                 st.write(report["llm_reasoning"])
 
-            # Show only final code
-            if report.get("final_fix"):
-                st.subheader("Final Corrected Fix")
-                st.code(report["final_fix"], language="python")
+            # Pull Request link (clickable)
+            if report.get("pull_request_url"):
+                st.subheader("Pull Request")
+                st.markdown(f"[View PR]({report['pull_request_url']})")
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")

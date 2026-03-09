@@ -1,59 +1,40 @@
-from src.rag.repo_loader import clone_repo
-from src.rag.file_loader import list_repo_files, load_selected_files
-from src.rag.chunker import chunk_documents
-from src.rag.vector_store import build_vector_store
-from src.rag.retriever import get_relevant_chunks
-from src.agents.issue_classifier import classify_issue
-from src.agents.research_agent import research_issue
-from src.agents.fix_generator_agent import generate_fix
-from src.agents.reviewer_agent import review_fix
-from src.agents.file_finder_agent import find_relevant_files
-from src.agents.pr_agent import create_pull_request
+import streamlit as st
+from src.main import solve_github_issue
+from src.tools.github_issue_fetcher import fetch_github_issue
 
-def solve_github_issue(repo_url, issue):
-    """
-    Returns:
-    - llm_reasoning: full reasoning from the LLM
-    - final_fix: Python code only
-    - pull_request_url: PR URL if created
-    """
-    report = {}
+st.set_page_config(page_title="Autonomous GitHub Issue Fixer", page_icon="🤖")
+st.title("🤖 Autonomous GitHub Issue Fixer")
+st.write(
+    "An AI multi-agent system that analyzes GitHub issues, generates fixes, "
+    "and optionally creates pull requests."
+)
 
-    # Classify issue
-    classification = classify_issue(issue)
-    if classification != "BUG":
-        report["llm_reasoning"] = f"Issue classified as {classification}. No fix required."
-        report["final_fix"] = None
-        report["pull_request_url"] = None
-        return report
+repo_url = st.text_input("GitHub Repository URL")
+issue_number = st.text_input("GitHub Issue Number")
 
-    # Clone repo and find files
-    repo_path = clone_repo(repo_url)
-    repo_files = list_repo_files(repo_path)
-    relevant_files = find_relevant_files(issue, repo_files)
-    files = load_selected_files(relevant_files, repo_path)
-    if not files:
-        files = load_selected_files(repo_files[:10], repo_path)
+if st.button("Solve Issue"):
+    if repo_url and issue_number:
+        try:
+            with st.spinner("Fetching issue from GitHub..."):
+                issue_text = fetch_github_issue(repo_url, issue_number)
 
-    # Chunk, vector store, and retrieval
-    chunks = chunk_documents(files)
-    vectorstore = build_vector_store(chunks)
-    keywords = research_issue(issue)
-    docs = get_relevant_chunks(vectorstore, keywords)
+            st.subheader("Fetched Issue")
+            st.write(issue_text)
 
-    # Generate fix
-    fix_response = generate_fix(issue, docs)
-    final_code = review_fix(issue, fix_response["code"])["code"]
+            with st.spinner("Generating fix and reasoning..."):
+                report = solve_github_issue(repo_url, issue_text)
 
-    # Store reasoning
-    report["llm_reasoning"] = fix_response["reasoning"]
-    report["final_fix"] = final_code
+            # Show full LLM reasoning exactly as returned
+            if report.get("llm_reasoning"):
+                st.subheader("LLM Reasoning and Explanation")
+                st.write(report["llm_reasoning"])
 
-    # Optionally create pull request (PR contains only final code)
-    if relevant_files:
-        pr_url = create_pull_request(repo_url, final_code, relevant_files[0])
-        report["pull_request_url"] = pr_url
+            # Pull Request link (clickable)
+            if report.get("pull_request_url"):
+                st.subheader("Pull Request")
+                st.markdown(f"[View PR]({report['pull_request_url']})")
+
+        except Exception as e:
+            st.error(f"Error occurred: {str(e)}")
     else:
-        report["pull_request_url"] = None
-
-    return report
+        st.warning("Please enter repository URL and issue number.")

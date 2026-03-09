@@ -2,12 +2,12 @@ from src.llm import llm
 
 def review_fix(issue, proposed_code):
     """
-    Review the generated fix and improve it if needed.
+    Review and improve a generated fix.
 
     Returns:
     {
-        "reasoning": <LLM review explanation>,
-        "code": <final Python code>
+        "reasoning": LLM review explanation (optional),
+        "code": final corrected Python code
     }
     """
     prompt = f"""
@@ -22,7 +22,7 @@ Proposed Fix:
 Tasks:
 1. Verify correctness.
 2. Identify mistakes or edge cases.
-3. Improve the solution if needed.
+3. Improve solution if needed.
 4. Provide only the final corrected Python code.
 
 Return your explanation and final code.
@@ -30,7 +30,6 @@ Return your explanation and final code.
     response = llm.invoke(prompt)
     full_text = response.content
 
-    # Split reasoning vs code (keep reasoning intact)
     code_start = full_text.find("```")
     if code_start != -1:
         reasoning = full_text[:code_start].strip()
