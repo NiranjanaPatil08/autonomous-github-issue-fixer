@@ -1,20 +1,15 @@
-from dotenv import load_dotenv
+import streamlit as st
 import os
-from pathlib import Path
 
-# Load .env from project root
-project_root = Path(__file__).resolve().parent.parent
-dotenv_path = project_root / ".env"
+# Use Streamlit Secrets first, fallback to local environment (for dev)
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 
-if not dotenv_path.exists():
-    raise FileNotFoundError(f".env file not found at {dotenv_path}")
-
-load_dotenv(dotenv_path=dotenv_path)
-
-# Get the API key from environment
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY not found. Check your .env file.")
+    raise ValueError(
+        "GROQ_API_KEY not found. "
+        "Add it to Streamlit secrets or your local environment."
+    )
 
-# Optional: print to confirm
-print("GROQ_API_KEY loaded successfully.")
+# Optional: print to confirm (only for local dev, remove for production)
+if os.getenv("STREAMLIT_SERVER") is None:
+    print("GROQ_API_KEY loaded successfully.")
