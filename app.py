@@ -27,21 +27,18 @@ if st.button("Solve Issue"):
 
             st.subheader("AI Reasoning + Fix")
 
-            # Detect existing code blocks and preserve them
-            # Split on ``` blocks but keep the markers
-            parts = re.split(r'(```(?:python)?\n.*?\n```)', llm_output, flags=re.DOTALL)
-            
-            formatted_output = ""
-            for part in parts:
-                # If part is a code block, render as-is
-                if part.startswith("```"):
-                    formatted_output += part + "\n"
-                else:
-                    # Escape triple backticks inside regular text
-                    safe_text = part.replace("```", "´´´")
-                    formatted_output += safe_text + "\n"
+            # Preserve multi-line code blocks as-is
+            # If LLM output has backticks, leave them. Otherwise, detect code and wrap manually.
+            code_block_pattern = r"(```[\s\S]*?```)"
+            parts = re.split(code_block_pattern, llm_output)
 
-            st.markdown(formatted_output, unsafe_allow_html=True)
+            for part in parts:
+                if part.startswith("```"):
+                    # Render code block properly
+                    st.code(part.strip("```"), language="javascript")  # or "python" depending
+                else:
+                    # Render normal text
+                    st.markdown(part)
 
         except Exception as e:
             st.error(f"Error occurred: {str(e)}")
