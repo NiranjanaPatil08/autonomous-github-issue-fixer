@@ -18,7 +18,7 @@ def solve_github_issue(repo_url, issue):
     """
     report = {}
 
-    # Classify issue
+    # 1. Classify Issue
     classification = classify_issue(issue)
     if classification != "BUG":
         report["llm_reasoning"] = f"Issue classified as: {classification}. No code fix required."
@@ -26,25 +26,45 @@ def solve_github_issue(repo_url, issue):
         report["pull_request_file"] = None
         return report
 
-    # Clone repo and list files
+    # 2. Clone repository
     repo_path = clone_repo(repo_url)
+
+    # 3. List repo files
     repo_files = list_repo_files(repo_path)
+
+    # 4. Find relevant files
     relevant_files = find_relevant_files(issue, repo_files)
+
+    # 5. Load files
     files = load_selected_files(relevant_files, repo_path)
     if not files:
         files = load_selected_files(repo_files[:10], repo_path)
+
+    # 6. Chunk files
     chunks = chunk_documents(files)
+
+    # 7. Build vector store
     vectorstore = build_vector_store(chunks)
+
+    # 8. Research issue
     keywords = research_issue(issue)
+
+    # 9. Retrieve relevant code
     docs = get_relevant_chunks(vectorstore, keywords)
 
-    # Generate fix and review
+    # 10. Generate fix
     fix_response = generate_fix(issue, docs)
+
+    # 11. Review fix
     review_response = review_fix(issue, fix_response.get("code", ""))
 
-    # Combine full LLM output
+    # 12. Combine full LLM reasoning
     report["llm_reasoning"] = fix_response.get("reasoning", "") + "\n\n" + review_response.get("reasoning", "")
+
+    # 13. Prepare final corrected code for PR
     report["final_fix"] = review_response.get("code", "")
+
+    # 14. Determine file for pull request
     report["pull_request_file"] = relevant_files[0] if relevant_files else repo_files[0]
 
     return report
